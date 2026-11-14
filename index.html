@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Anime</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Catálogo de Anime</h1>
+
+    <!-- Barra de búsqueda -->
+    <form id="form-busqueda" class="buscador">
+      <input type="text" id="input-busqueda" placeholder="Buscar anime (ej. Naruto, Bleach, One Piece)..." required>
+      <button type="submit">Buscar</button>
+    </form>
+
+    <nav class="filtros">
+      <button onclick="cargarAnimes('seasons/now', this)" class="activo">En Emisión (Nuevos)</button>
+      <button onclick="cargarAnimes('top/anime', this)">Más Populares</button>
+      <button onclick="cargarAnimes('seasons/upcoming', this)">Próximos Estrenos</button>
+    </nav>
+  </header>
+
+  <main id="contenedor-anime" class="grid-anime">
+    <p class="mensaje">Cargando animes...</p>
+  </main>
+
+  <div id="modal-anime" class="modal oculto">
+    <div class="modal-contenido">
+      <span class="cerrar" onclick="cerrarModal()">&times;</span>
+      <div id="modal-cuerpo"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
