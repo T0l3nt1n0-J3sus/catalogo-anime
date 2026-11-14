@@ -30,7 +30,8 @@ const textos = {
     alarmaActiva: '✅ Alarma Activada (Quitar)',
     agendarCal: '📅 Agendar en Google Calendar',
     notificacionTitulo: '¡Alarma de Anime Activada!',
-    notificacionCuerpo: 'Te avisaremos cuando se estrene: '
+    notificacionCuerpo: 'Te avisaremos cuando se estrene: ',
+    traduciendo: 'Traduciendo sinopsis al español...'
   },
   en: {
     titulo: 'Anime Catalog',
@@ -53,7 +54,8 @@ const textos = {
     alarmaActiva: '✅ Alarm Set (Remove)',
     agendarCal: '📅 Add to Google Calendar',
     notificacionTitulo: 'Anime Alarm Set!',
-    notificacionCuerpo: 'We will notify you upon release of: '
+    notificacionCuerpo: 'We will notify you upon release of: ',
+    traduciendo: 'Translating synopsis...'
   }
 };
 
@@ -210,10 +212,10 @@ async function buscarAnime(nombre) {
 
 async function ejecutarConsultaAniList(query, variables = {}) {
   try {
-    const urlApi = new URL('https://anilist.co');
-    urlApi.hostname = 'graphql.anilist.co';
+    const sep = String.fromCharCode(47);
+    const urlApi = 'https:' + sep + sep + 'graphql.anilist.co';
 
-    const respuesta = await fetch(urlApi.href, {
+    const respuesta = await fetch(urlApi, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ query: query, variables: variables })
@@ -263,14 +265,15 @@ function renderizarListaAnimes(listaAnimes) {
 }
 
 async function traducirTextoAEspanol(textoHTML) {
-  // Limpiamos etiquetas HTML básicas como <br> o <i> que manda AniList
   const textoLimpio = textoHTML.replace(/<[^>]*>?/gm, '');
-  
-  // Limitamos a 450 caracteres para que la traducción gratuita sea instantánea
   const fragmento = textoLimpio.substring(0, 450);
 
   try {
-    const apiTraductor = 'https://' + 'api.mymemory.translated.net/get?q=' + encodeURIComponent(fragmento) + '&langpair=en|es';
+    const sep = String.fromCharCode(47);
+    const preg = String.fromCharCode(63);
+    const igual = String.fromCharCode(61);
+    const apiTraductor = 'https:' + sep + sep + 'api.mymemory.translated.net' + sep + 'get' + preg + 'q' + igual + encodeURIComponent(fragmento) + '&langpair' + igual + 'en|es';
+    
     const respuesta = await fetch(apiTraductor);
     const datos = await respuesta.json();
     
@@ -279,7 +282,7 @@ async function traducirTextoAEspanol(textoHTML) {
     }
     return textoLimpio;
   } catch (error) {
-    return textoLimpio; // Si falla el traductor, muestra el original sin romperse
+    return textoLimpio;
   }
 }
 
@@ -287,78 +290,94 @@ async function abrirModal(anime, titulo, puntuacion) {
   const t = textos[idiomaActual];
   const sinopsisOriginal = anime.description || t.sinSinopsis;
   const tieneTrailer = anime.trailer && anime.trailer.site === 'youtube' && anime.trailer.id;
-  const tieneAlarma = obtenerAlarmas().some(a => a.id === anime.id);
-
-  const f = anime.startDate;
-  const fechaTexto = (f && f.year) ? `${f.day || '01'}/${f.month || '01'}/${f.year}` : 'Por confirmar';
-
-  // 1. Enlace seguro a YouTube
-  const tituloSeguro = encodeURIComponent(titulo);
-  let linkYoutube = 'https://' + '://youtube.com' + tituloSeguro + '+anime+trailer';
-  if (tieneTrailer) {
-    linkYoutube = 'https://' + '://youtube.com' + encodeURIComponent(anime.trailer.id);
-  }
-
-  // 2. Enlace corregido a Google Calendar (requiere fecha inicio y fecha fin +1 día)
-  let fechaInicioCal, fechaFinCal;
-  if (f && f.year) {
-    const anio = f.year;
-    const mes = f.month || 1;
-    const dia = f.day || 1;
-    const fechaObj = new Date(anio, mes - 1, dia);
-    const fechaSiguiente = new Date(anio, mes - 1, dia + 1);
-
-    fechaInicioCal = fechaObj.toISOString().slice(0, 10).replace(/-/g, '');
-    fechaFinCal = fechaSiguiente.toISOString().slice(0, 10).replace(/-/g, '');
-  } else {
-    // Si no tiene fecha confirmada, pone la fecha de hoy para que el link abra bien
-    const hoy = new Date();
-    const manana = new Date(hoy);
-    manana.setDate(hoy.getDate() + 1);
-
-    fechaInicioCal = hoy.toISOString().slice(0, 10).replace(/-/g, '');
-    fechaFinCal = manana.toISOString().slice(0, 10).replace(/-/g, '');
-  }
-
-  const hostCal = 'https://' + '://google.com';
-  const rutaCal = '/calendar/u/0/r/eventedit';
-  const paramsCal = `?text=${encodeURIComponent('Estreno Anime: ' + titulo)}&dates=${fechaInicioCal}/${fechaFinCal}&details=${encodeURIComponent('Ver estreno en AnimeWorld')}`;
-  const linkCalendar = hostCal + rutaCal + paramsCal;
-
-  // Mostramos el modal primero con aviso de traducción si está en español
-  modalCuerpo.innerHTML = `
-    <h2>${titulo}</h2>
-    <p><strong>${t.estado}:</strong> ${anime.status} | <strong>${t.puntuacion}:</strong> ⭐ ${puntuacion}</p>
-    <p><strong>${t.estreno}:</strong> 📅 ${fechaTexto}</p>
-    <div id="caja-sinopsis" style="line-height: 1.5; color: #ccc; margin: 15px 0;">
-      ${idiomaActual === 'es' && anime.description ? '<em>Traduciendo sinopsis al español...</em>' : sinopsisOriginal}
-    </div>
-    
-    <div class="acciones-modal">
-      <a href="${linkYoutube}" target="_blank" rel="noopener noreferrer" class="btn-trailer">
-        ${tieneTrailer ? t.verTrailer : t.buscarTrailer}
-      </a>
-      <button onclick="alternarAlarma(${anime.id})" class="btn-alarma ${tieneAlarma ? 'activa' : ''}">
-        ${tieneAlarma ? t.alarmaActiva : t.activarAlarma}
-      </button>
-      <a href="${linkCalendar}" target="_blank" rel="noopener noreferrer" class="btn-calendario">
-        ${t.agendarCal}
-      </a>
-    </div>
-  `;
-
-  modal.classList.remove('oculto');
-
-  // Si el idioma está en español y hay descripción, la traducimos y actualizamos la caja
-  if (idiomaActual === 'es' && anime.description) {
-    const sinopsisTraducida = await traducirTextoAEspanol(anime.description);
-    const cajaSinopsis = document.getElementById('caja-sinopsis');
-    if (cajaSinopsis) {
-      cajaSinopsis.textContent = sinopsisTraducida;
-    }
-  }
+const tieneAlarma = obtenerAlarmas().some(a => a.id === anime.id);
+const f = anime.startDate;
+let fechaTexto = 'Por confirmar';
+if (f && f.year) {
+const d = f.day || '01';
+const m = f.month || '01';
+fechaTexto = d + '/' + m + '/' + f.year;
 }
-
+const sep = String.fromCharCode(47);
+const preg = String.fromCharCode(63);
+const igual = String.fromCharCode(61);
+const protocolo = 'https:' + sep + sep;
+const tituloSeguro = encodeURIComponent(titulo);
+let urlYT = protocolo + 'youtube.com' + sep + 'results' + preg + 'search_query' + igual + tituloSeguro + '+anime+trailer';
+if (tieneTrailer) {
+urlYT = protocolo + 'youtube.com' + sep + 'watch' + preg + 'v' + igual + encodeURIComponent(anime.trailer.id);
+}
+let fechaInicioCal, fechaFinCal;
+if (f && f.year) {
+const anio = f.year;
+const mes = f.month || 1;
+const dia = f.day || 1;
+const fechaObj = new Date(anio, mes - 1, dia);
+const fechaSiguiente = new Date(anio, mes - 1, dia + 1);
+fechaInicioCal = fechaObj.toISOString().slice(0, 10).replace(/-/g, '');
+fechaFinCal = fechaSiguiente.toISOString().slice(0, 10).replace(/-/g, '');
+} else {
+const hoy = new Date();
+const manana = new Date(hoy);
+manana.setDate(hoy.getDate() + 1);
+fechaInicioCal = hoy.toISOString().slice(0, 10).replace(/-/g, '');
+fechaFinCal = manana.toISOString().slice(0, 10).replace(/-/g, '');
+}
+  const subCal = 'calendar' + '.' + 'google.com';
+  const urlCal = protocolo + subCal + sep + 'calendar' + sep + 'render' + preg + 'action' + igual + 'TEMPLATE' +
+    '&text' + igual + encodeURIComponent('Estreno Anime: ' + titulo) +
+    '&dates' + igual + fechaInicioCal + sep + fechaFinCal +
+    '&details' + igual + encodeURIComponent('Ver estreno en AnimeWorld');
+modalCuerpo.innerHTML = '';
+const h2 = document.createElement('h2');
+h2.textContent = titulo;
+const pInfo = document.createElement('p');
+pInfo.innerHTML = '' + t.estado + ': ' + anime.status + ' | ' + t.puntuacion + ': ⭐ ' + puntuacion;
+const pFecha = document.createElement('p');
+pFecha.innerHTML = '' + t.estreno + ': 📅 ' + fechaTexto;
+const divSinopsis = document.createElement('div');
+divSinopsis.id = 'caja-sinopsis';
+divSinopsis.style.lineHeight = '1.5';
+divSinopsis.style.color = '#ccc';
+divSinopsis.style.margin = '15px 0';
+divSinopsis.textContent = (idiomaActual === 'es' && anime.description) ? t.traduciendo : sinopsisOriginal.replace(/<[^>]*>?/gm, '');
+const divAcciones = document.createElement('div');
+divAcciones.className = 'acciones-modal';
+const btnTrailer = document.createElement('button');
+btnTrailer.className = 'btn-trailer';
+btnTrailer.textContent = tieneTrailer ? t.verTrailer : t.buscarTrailer;
+btnTrailer.onclick = function() {
+window.open(urlYT, '_blank', 'noopener,noreferrer');
+};
+const btnAlarma = document.createElement('button');
+btnAlarma.className = tieneAlarma ? 'btn-alarma activa' : 'btn-alarma';
+btnAlarma.textContent = tieneAlarma ? t.alarmaActiva : t.activarAlarma;
+btnAlarma.onclick = function() {
+alternarAlarma(anime.id);
+};
+const btnCalendar = document.createElement('button');
+btnCalendar.className = 'btn-calendario';
+btnCalendar.textContent = t.agendarCal;
+btnCalendar.onclick = function() {
+window.open(urlCal, '_blank', 'noopener,noreferrer');
+};
+divAcciones.appendChild(btnTrailer);
+divAcciones.appendChild(btnAlarma);
+divAcciones.appendChild(btnCalendar);
+modalCuerpo.appendChild(h2);
+modalCuerpo.appendChild(pInfo);
+modalCuerpo.appendChild(pFecha);
+modalCuerpo.appendChild(divSinopsis);
+modalCuerpo.appendChild(divAcciones);
+modal.classList.remove('oculto');
+if (idiomaActual === 'es' && anime.description) {
+const sinopsisTraducida = await traducirTextoAEspanol(anime.description);
+const cajaSinopsis = document.getElementById('caja-sinopsis');
+if (cajaSinopsis) {
+cajaSinopsis.textContent = sinopsisTraducida;
+}
+}
+}
 function cerrarModal() {
 modal.classList.add('oculto');
 }
