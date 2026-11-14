@@ -289,3 +289,25 @@ header h1 {
 .btn-trailer:hover, .btn-alarma:hover, .btn-calendario:hover {
   transform: translateY(-2px);
 }
+.contenedor-paginacion {
+  text-align: center;
+  margin: 40px auto 20px auto;
+}
+
+.btn-cargar-mas {
+  background: linear-gradient(135deg, #3742fa, #5352ed);
+  color: #ffffff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(83, 82, 237, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-cargar-mas:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(83, 82, 237, 0.6);
+}

@@ -31,9 +31,17 @@
     </nav>
   </header>
 
-  <main id="contenedor-anime" class="grid-anime">
+    <main id="contenedor-anime" class="grid-anime">
     <p class="mensaje">Cargando animes...</p>
   </main>
+
+  <!-- Botón para cargar más páginas de animes -->
+  <div class="contenedor-paginacion">
+    <button id="btn-cargar-mas" onclick="cargarMasAnimes()" class="btn-cargar-mas oculto">
+      ➕ Cargar más animes
+    </button>
+  </div>
+
 
   <div id="modal-anime" class="modal oculto">
     <div class="modal-contenido">
