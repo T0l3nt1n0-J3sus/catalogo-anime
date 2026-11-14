@@ -311,3 +311,20 @@ header h1 {
   transform: translateY(-3px);
   box-shadow: 0 10px 25px rgba(83, 82, 237, 0.6);
 }
+.btn-ver-anime {
+  display: inline-block;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2ed573, #1eae60);
+  color: #090a0f;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-ver-anime:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 213, 115, 0.4);
+}

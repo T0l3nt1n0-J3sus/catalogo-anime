@@ -180,7 +180,7 @@ async function cargarAnimes(categoria, botonSeleccionado = null, pagina = 1) {
     filtroAniList = 'sort: POPULARITY_DESC, status: NOT_YET_RELEASED';
   }
 
-  const query = 'query ($page: Int) { Page(page: $page, perPage: 30) { pageInfo { hasNextPage } media(type: ANIME, ' + filtroAniList + ', isAdult: false) { id title { romaji english } coverImage { large } averageScore episodes status startDate { year month day } description trailer { id site } } } }';
+  const query = 'query ($page: Int) { Page(page: $page, perPage: 30) { pageInfo { hasNextPage } media(type: ANIME, ' + filtroAniList + ', isAdult: false) { id title { romaji english } coverImage { large } averageScore episodes status startDate { year month day } description trailer { id site } externalLinks { url site type } } } }';
 
   ejecutarConsultaAniList(query, { page: pagina }, pagina > 1);
 }
@@ -197,16 +197,12 @@ async function buscarAnime(nombre, pagina = 1) {
     listaAnimesActuales = [];
     btnCargarMas.classList.add('oculto');
   }
-
-  const query = 'query ($search: String, $page: Int) { Page(page: $page, perPage: 30) { pageInfo { hasNextPage } media(type: ANIME, search: $search, isAdult: false) { id title { romaji english } coverImage { large } averageScore episodes status startDate { year month day } description trailer { id site } } } }';
-
+  const query = 'query ($search: String, $page: Int) { Page(page: $page, perPage: 30) { pageInfo { hasNextPage } media(type: ANIME, search: $search, isAdult: false) { id title { romaji english } coverImage { large } averageScore episodes status startDate { year month day } description trailer { id site } externalLinks { url site type } } } }';
   ejecutarConsultaAniList(query, { search: nombre, page: pagina }, pagina > 1);
 }
-
 function cargarMasAnimes() {
   btnCargarMas.textContent = textos[idiomaActual].cargandoMas;
   btnCargarMas.disabled = true;
-
   const siguientePagina = paginaActual + 1;
   if (modoActual === 'busqueda') {
     buscarAnime(terminoBusquedaActual, siguientePagina);
@@ -214,37 +210,30 @@ function cargarMasAnimes() {
     cargarAnimes(modoActual, null, siguientePagina);
   }
 }
-
 async function ejecutarConsultaAniList(query, variables = {}, esCargaAdicional = false) {
   try {
     const sep = String.fromCharCode(47);
     const urlApi = 'https:' + sep + sep + 'graphql.anilist.co';
-
     const respuesta = await fetch(urlApi, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ query: query, variables: variables })
     });
-
     const resultado = await respuesta.json();
     const datosPagina = resultado.data.Page;
     const nuevosAnimes = datosPagina.media;
-
     if (!esCargaAdicional) {
       contenedor.innerHTML = '';
       listaAnimesActuales = nuevosAnimes;
     } else {
       listaAnimesActuales = listaAnimesActuales.concat(nuevosAnimes);
     }
-
     if (listaAnimesActuales.length === 0) {
       contenedor.innerHTML = '<p class="mensaje">' + textos[idiomaActual].sinResultados + '</p>';
       btnCargarMas.classList.add('oculto');
       return;
     }
-
     renderizarListaAnimes(nuevosAnimes);
-
     btnCargarMas.textContent = textos[idiomaActual].cargarMas;
     btnCargarMas.disabled = false;
     if (datosPagina.pageInfo.hasNextPage) {
@@ -252,7 +241,6 @@ async function ejecutarConsultaAniList(query, variables = {}, esCargaAdicional =
     } else {
       btnCargarMas.classList.add('oculto');
     }
-
   } catch (error) {
     console.error('Detalle del fallo:', error);
     btnCargarMas.textContent = textos[idiomaActual].cargarMas;
@@ -262,53 +250,41 @@ async function ejecutarConsultaAniList(query, variables = {}, esCargaAdicional =
     }
   }
 }
-
 function renderizarListaAnimes(listaAnimes) {
   const alarmasGuardadas = obtenerAlarmas();
-
   listaAnimes.forEach(anime => {
     const titulo = anime.title.english || anime.title.romaji;
     const puntuacion = anime.averageScore ? (anime.averageScore / 10).toFixed(1) : 'N/A';
     const tieneAlarma = alarmasGuardadas.some(a => a.id === anime.id);
-
     const tarjeta = document.createElement('article');
     tarjeta.classList.add('tarjeta-anime');
-
     if (tieneAlarma) {
       const badge = document.createElement('span');
       badge.className = 'badge-alarma';
       badge.textContent = '🔔 Alarma';
       tarjeta.appendChild(badge);
     }
-
     const img = document.createElement('img');
     img.src = anime.coverImage.large;
     img.alt = titulo;
     tarjeta.appendChild(img);
-
     const divInfo = document.createElement('div');
     divInfo.className = 'info';
-
     const h3 = document.createElement('h3');
     h3.title = titulo;
     h3.textContent = titulo;
-
     const p = document.createElement('p');
     p.textContent = '⭐ ' + puntuacion + ' | 📺 ' + (anime.episodes || '?') + ' eps';
-
     divInfo.appendChild(h3);
     divInfo.appendChild(p);
     tarjeta.appendChild(divInfo);
-
     tarjeta.addEventListener('click', () => abrirModal(anime, titulo, puntuacion));
     contenedor.appendChild(tarjeta);
   });
 }
-
 async function traducirTextoAEspanol(textoHTML) {
   const textoLimpio = textoHTML.replace(/<[^>]*>?/gm, '');
   const fragmento = textoLimpio.substring(0, 450);
-
   try {
     const sep = String.fromCharCode(47);
     const preg = String.fromCharCode(63);
@@ -326,7 +302,6 @@ async function traducirTextoAEspanol(textoHTML) {
     return textoLimpio;
   }
 }
-
 async function abrirModal(anime, titulo, puntuacion) {
   const t = textos[idiomaActual];
   const sinopsisOriginal = anime.description || t.sinSinopsis;
@@ -377,6 +352,7 @@ async function abrirModal(anime, titulo, puntuacion) {
     '&dates' + igual + fechaInicioCal + sep + fechaFinCal +
     '&details' + igual + encodeURIComponent('Ver estreno en AnimeWorld');
 
+  // 1. Limpiamos y creamos los elementos base
   modalCuerpo.innerHTML = '';
 
   const h2 = document.createElement('h2');
@@ -395,45 +371,79 @@ async function abrirModal(anime, titulo, puntuacion) {
   divSinopsis.style.margin = '15px 0';
   divSinopsis.textContent = (idiomaActual === 'es' && anime.description) ? t.traduciendo : sinopsisOriginal.replace(/<[^>]*>?/gm, '');
 
+  // 2. Creamos la caja de botones PRIMERO
   const divAcciones = document.createElement('div');
   divAcciones.className = 'acciones-modal';
 
+  // Botón Tráiler
   const btnTrailer = document.createElement('button');
   btnTrailer.className = 'btn-trailer';
   btnTrailer.textContent = tieneTrailer ? t.verTrailer : t.buscarTrailer;
   btnTrailer.onclick = function() {
     window.open(urlYT, '_blank', 'noopener,noreferrer');
   };
+  divAcciones.appendChild(btnTrailer);
 
+  // Botones de Plataformas Oficiales (Crunchyroll, Netflix, etc.)
+  const plataformas = (anime.externalLinks || []).filter(link => link.type === 'STREAMING');
+
+  if (plataformas.length > 0) {
+    plataformas.forEach(plat => {
+      const btnVer = document.createElement('button');
+      btnVer.className = 'btn-ver-anime';
+      btnVer.textContent = '📺 Ver en ' + plat.site;
+      btnVer.onclick = function() {
+        window.open(plat.url, '_blank', 'noopener,noreferrer');
+      };
+      divAcciones.appendChild(btnVer);
+    });
+  } else {
+    const btnBuscarVer = document.createElement('button');
+    btnBuscarVer.className = 'btn-ver-anime';
+    btnBuscarVer.textContent = idiomaActual === 'es' ? '📺 Buscar dónde ver' : '📺 Where to watch';
+    const urlCrunchy = protocolo + '://crunchyroll.com' + sep + 'search' + preg + 'q' + igual + tituloSeguro;
+    btnBuscarVer.onclick = function() {
+      window.open(urlCrunchy, '_blank', 'noopener,noreferrer');
+    };
+    divAcciones.appendChild(btnBuscarVer);
+  }
+
+  // Botón Alarma
   const btnAlarma = document.createElement('button');
   btnAlarma.className = tieneAlarma ? 'btn-alarma activa' : 'btn-alarma';
   btnAlarma.textContent = tieneAlarma ? t.alarmaActiva : t.activarAlarma;
-btnAlarma.onclick = function() {
-alternarAlarma(anime.id);
-};
-const btnCalendar = document.createElement('button');
-btnCalendar.className = 'btn-calendario';
-btnCalendar.textContent = t.agendarCal;
-btnCalendar.onclick = function() {
-window.open(urlCal, '_blank', 'noopener,noreferrer');
-};
-divAcciones.appendChild(btnTrailer);
-divAcciones.appendChild(btnAlarma);
-divAcciones.appendChild(btnCalendar);
-modalCuerpo.appendChild(h2);
-modalCuerpo.appendChild(pInfo);
-modalCuerpo.appendChild(pFecha);
-modalCuerpo.appendChild(divSinopsis);
-modalCuerpo.appendChild(divAcciones);
-modal.classList.remove('oculto');
-if (idiomaActual === 'es' && anime.description) {
-const sinopsisTraducida = await traducirTextoAEspanol(anime.description);
-const cajaSinopsis = document.getElementById('caja-sinopsis');
-if (cajaSinopsis) {
-cajaSinopsis.textContent = sinopsisTraducida;
+  btnAlarma.onclick = function() {
+    alternarAlarma(anime.id);
+  };
+  divAcciones.appendChild(btnAlarma);
+
+  // Botón Google Calendar
+  const btnCalendar = document.createElement('button');
+  btnCalendar.className = 'btn-calendario';
+  btnCalendar.textContent = t.agendarCal;
+  btnCalendar.onclick = function() {
+    window.open(urlCal, '_blank', 'noopener,noreferrer');
+  };
+  divAcciones.appendChild(btnCalendar);
+
+  // 3. Agregamos todo al modal
+  modalCuerpo.appendChild(h2);
+  modalCuerpo.appendChild(pInfo);
+  modalCuerpo.appendChild(pFecha);
+  modalCuerpo.appendChild(divSinopsis);
+  modalCuerpo.appendChild(divAcciones);
+
+  modal.classList.remove('oculto');
+
+  if (idiomaActual === 'es' && anime.description) {
+    const sinopsisTraducida = await traducirTextoAEspanol(anime.description);
+    const cajaSinopsis = document.getElementById('caja-sinopsis');
+    if (cajaSinopsis) {
+      cajaSinopsis.textContent = sinopsisTraducida;
+    }
+  }
 }
-}
-}
+
 function cerrarModal() {
 modal.classList.add('oculto');
 }
