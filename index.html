@@ -3,24 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal de Anime</title>
+  <title>AnimeWorld | Catálogo y Estrenos</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header>
-    <h1>Catálogo de Anime</h1>
+    <div class="barra-superior">
+      <button id="btn-mis-alarmas" onclick="mostrarMisAlarmas()" class="btn-secundario">🔔 Mis Alarmas (0)</button>
+      <select id="selector-idioma" onchange="cambiarIdioma(this.value)" class="select-idioma">
+        <option value="es">🇪🇸 Español</option>
+        <option value="en">🇺🇸 English</option>
+      </select>
+    </div>
 
-    <!-- Barra de búsqueda -->
+    <h1 id="titulo-principal">Catálogo de Anime</h1>
+
     <form id="form-busqueda" class="buscador">
       <input type="text" id="input-busqueda" placeholder="Buscar anime (ej. Naruto, Bleach, One Piece)..." required>
-      <button type="submit">Buscar</button>
+      <button type="submit" id="btn-buscar">Buscar</button>
     </form>
 
     <nav class="filtros">
-      <button onclick="cargarAnimes('seasons/now', this)" class="activo">En Emisión (Nuevos)</button>
-      <button onclick="cargarAnimes('top/anime', this)">Más Populares</button>
-      <button onclick="cargarAnimes('seasons/upcoming', this)">Próximos Estrenos</button>
+      <button id="tab-emision" onclick="cargarAnimes('seasons/now', this)" class="activo">En Emisión (Nuevos)</button>
+      <button id="tab-populares" onclick="cargarAnimes('top/anime', this)">Más Populares</button>
+      <button id="tab-proximos" onclick="cargarAnimes('seasons/upcoming', this)">Próximos Estrenos</button>
     </nav>
   </header>
 
